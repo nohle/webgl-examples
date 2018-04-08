@@ -9,7 +9,7 @@ main();
 //
 function main() {
   const canvas = document.querySelector('#glcanvas');
-  const gl = canvas.getContext('webgl');
+  const gl = canvas.getContext('webgl2');
 
   // If we don't have a GL context, give up now
 
@@ -41,9 +41,7 @@ function main() {
     },
   };
 
-  // Here's where we call the routine that builds all the
-  // objects we'll be drawing.
-  const buffers = initBuffers(gl);
+  const vaoInfo = initVAO(gl, programInfo.attribLocations);
 
   const texture = initTexture(gl);
 
@@ -61,7 +59,7 @@ function main() {
       updateTexture(gl, texture, video);
     }
 
-    drawScene(gl, programInfo, buffers, texture, deltaTime);
+    drawScene(gl, programInfo, vaoInfo, texture, deltaTime);
 
     requestAnimationFrame(render);
   }
@@ -132,6 +130,8 @@ function initTexture(gl, url) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 
+  gl.bindTexture(gl.TEXTURE_2D, null);
+
   return texture;
 }
 
@@ -146,6 +146,7 @@ function updateTexture(gl, texture, video) {
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
                 srcFormat, srcType, video);
+  gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
 function isPowerOf2(value) {
@@ -155,7 +156,7 @@ function isPowerOf2(value) {
 //
 // Draw the scene.
 //
-function drawScene(gl, programInfo, buffers, texture, deltaTime) {
+function drawScene(gl, programInfo, vaoInfo, texture, deltaTime) {
   gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
   gl.clearDepth(1.0);                 // Clear everything
   gl.enable(gl.DEPTH_TEST);           // Enable depth testing
@@ -209,69 +210,6 @@ function drawScene(gl, programInfo, buffers, texture, deltaTime) {
   mat4.invert(normalMatrix, modelViewMatrix);
   mat4.transpose(normalMatrix, normalMatrix);
 
-  // Tell WebGL how to pull out the positions from the position
-  // buffer into the vertexPosition attribute
-  {
-    const numComponents = 3;
-    const type = gl.FLOAT;
-    const normalize = false;
-    const stride = 0;
-    const offset = 0;
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
-    gl.vertexAttribPointer(
-        programInfo.attribLocations.vertexPosition,
-        numComponents,
-        type,
-        normalize,
-        stride,
-        offset);
-    gl.enableVertexAttribArray(
-        programInfo.attribLocations.vertexPosition);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-  }
-
-  // Tell WebGL how to pull out the texture coordinates from
-  // the texture coordinate buffer into the textureCoord attribute.
-  {
-    const numComponents = 2;
-    const type = gl.FLOAT;
-    const normalize = false;
-    const stride = 0;
-    const offset = 0;
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.textureCoord);
-    gl.vertexAttribPointer(
-        programInfo.attribLocations.textureCoord,
-        numComponents,
-        type,
-        normalize,
-        stride,
-        offset);
-    gl.enableVertexAttribArray(
-        programInfo.attribLocations.textureCoord);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-  }
-
-  // Tell WebGL how to pull out the normals from
-  // the normal buffer into the vertexNormal attribute.
-  {
-    const numComponents = 3;
-    const type = gl.FLOAT;
-    const normalize = false;
-    const stride = 0;
-    const offset = 0;
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
-    gl.vertexAttribPointer(
-        programInfo.attribLocations.vertexNormal,
-        numComponents,
-        type,
-        normalize,
-        stride,
-        offset);
-    gl.enableVertexAttribArray(
-        programInfo.attribLocations.vertexNormal);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-  }
-
   // Tell WebGL to use our program when drawing
   gl.useProgram(programInfo.program);
 
@@ -293,23 +231,19 @@ function drawScene(gl, programInfo, buffers, texture, deltaTime) {
 
   // Tell WebGL we want to affect texture unit 0
   gl.activeTexture(gl.TEXTURE0);
-
   // Bind the texture to texture unit 0
   gl.bindTexture(gl.TEXTURE_2D, texture);
-
   // Tell the shader we bound the texture to texture unit 0
   gl.uniform1i(programInfo.uniformLocations.sampler, 0);
+  // Unbind the texture
+  // gl.bindTexture(gl.TEXTURE_2D, null);
 
   {
-    const vertexCount = 36;
-    const type = gl.UNSIGNED_SHORT;
-    const offset = 0;
-    // Tell WebGL which indices to use to index the vertices
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
-    gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
+    gl.bindVertexArray(vaoInfo.vao);
+    gl.drawElements(gl.TRIANGLES, vaoInfo.indexCount, vaoInfo.indexType, vaoInfo.indexOffset);
+    gl.bindVertexArray(null);
   }
 
   // Update the rotation for the next draw
-
   cubeRotation += deltaTime;
 }

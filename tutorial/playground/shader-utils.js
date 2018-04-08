@@ -1,15 +1,15 @@
 // Vertex shader program
-const vsSource = `
-  attribute vec4 aVertexPosition;
-  attribute vec3 aVertexNormal;
-  attribute vec2 aTextureCoord;
+const vsSource = `#version 300 es
+  in vec4 aVertexPosition;
+  in vec3 aVertexNormal;
+  in vec2 aTextureCoord;
 
   uniform mat4 uNormalMatrix;
   uniform mat4 uModelViewMatrix;
   uniform mat4 uProjectionMatrix;
 
-  varying highp vec2 vTextureCoord;
-  varying highp vec3 vLighting;
+  out highp vec2 vTextureCoord;
+  out highp vec3 vLighting;
 
   void main(void) {
     gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
@@ -29,16 +29,18 @@ const vsSource = `
 `;
 
 // Fragment shader program
-const fsSource = `
-  varying highp vec2 vTextureCoord;
-  varying highp vec3 vLighting;
+const fsSource = `#version 300 es
+  in highp vec2 vTextureCoord;
+  in highp vec3 vLighting;
 
   uniform sampler2D uSampler;
 
-  void main(void) {
-    highp vec4 texelColor = texture2D(uSampler, vTextureCoord);
+  out highp vec4 fragColor;
 
-    gl_FragColor = vec4(texelColor.rgb * vLighting, texelColor.a);
+  void main(void) {
+    highp vec4 texelColor = texture(uSampler, vTextureCoord);
+
+    fragColor = vec4(texelColor.rgb * vLighting, texelColor.a);
   }
 `;
 

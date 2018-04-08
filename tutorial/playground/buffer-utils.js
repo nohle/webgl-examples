@@ -1,217 +1,183 @@
-//
-// initBuffers
-//
-// Initialize the buffers we'll need. For this demo, we just
-// have one object -- a simple three-dimensional cube.
-//
-function initBuffers(gl) {
+/***** Cube Data *****/
+const vertexPositions = [
+  // Front face
+  -1.0, -1.0,  1.0,
+   1.0, -1.0,  1.0,
+   1.0,  1.0,  1.0,
+  -1.0,  1.0,  1.0,
 
-  // Create a buffer for the cube's vertex positions.
-  const positionBuffer = gl.createBuffer();
+  // Back face
+  -1.0, -1.0, -1.0,
+  -1.0,  1.0, -1.0,
+   1.0,  1.0, -1.0,
+   1.0, -1.0, -1.0,
 
-  // Select the positionBuffer as the one to apply buffer
-  // operations to from here out.
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  // Top face
+  -1.0,  1.0, -1.0,
+  -1.0,  1.0,  1.0,
+   1.0,  1.0,  1.0,
+   1.0,  1.0, -1.0,
 
-  // Now create an array of positions for the cube.
-  const positions = [
-    // Front face
-    -1.0, -1.0,  1.0,
-     1.0, -1.0,  1.0,
-     1.0,  1.0,  1.0,
-    -1.0,  1.0,  1.0,
+  // Bottom face
+  -1.0, -1.0, -1.0,
+   1.0, -1.0, -1.0,
+   1.0, -1.0,  1.0,
+  -1.0, -1.0,  1.0,
 
-    // Back face
-    -1.0, -1.0, -1.0,
-    -1.0,  1.0, -1.0,
-     1.0,  1.0, -1.0,
-     1.0, -1.0, -1.0,
+  // Right face
+   1.0, -1.0, -1.0,
+   1.0,  1.0, -1.0,
+   1.0,  1.0,  1.0,
+   1.0, -1.0,  1.0,
 
-    // Top face
-    -1.0,  1.0, -1.0,
-    -1.0,  1.0,  1.0,
-     1.0,  1.0,  1.0,
-     1.0,  1.0, -1.0,
+  // Left face
+  -1.0, -1.0, -1.0,
+  -1.0, -1.0,  1.0,
+  -1.0,  1.0,  1.0,
+  -1.0,  1.0, -1.0,
+];
+const vertexNormals = [
+  // Front
+   0.0,  0.0,  1.0,
+   0.0,  0.0,  1.0,
+   0.0,  0.0,  1.0,
+   0.0,  0.0,  1.0,
 
-    // Bottom face
-    -1.0, -1.0, -1.0,
-     1.0, -1.0, -1.0,
-     1.0, -1.0,  1.0,
-    -1.0, -1.0,  1.0,
+  // Back
+   0.0,  0.0, -1.0,
+   0.0,  0.0, -1.0,
+   0.0,  0.0, -1.0,
+   0.0,  0.0, -1.0,
 
-    // Right face
-     1.0, -1.0, -1.0,
-     1.0,  1.0, -1.0,
-     1.0,  1.0,  1.0,
-     1.0, -1.0,  1.0,
+  // Top
+   0.0,  1.0,  0.0,
+   0.0,  1.0,  0.0,
+   0.0,  1.0,  0.0,
+   0.0,  1.0,  0.0,
 
-    // Left face
-    -1.0, -1.0, -1.0,
-    -1.0, -1.0,  1.0,
-    -1.0,  1.0,  1.0,
-    -1.0,  1.0, -1.0,
-  ];
+  // Bottom
+   0.0, -1.0,  0.0,
+   0.0, -1.0,  0.0,
+   0.0, -1.0,  0.0,
+   0.0, -1.0,  0.0,
 
-  // Now pass the list of positions into WebGL to build the
-  // shape. We do this by creating a Float32Array from the
-  // JavaScript array, then use it to fill the current buffer.
+  // Right
+   1.0,  0.0,  0.0,
+   1.0,  0.0,  0.0,
+   1.0,  0.0,  0.0,
+   1.0,  0.0,  0.0,
 
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+  // Left
+  -1.0,  0.0,  0.0,
+  -1.0,  0.0,  0.0,
+  -1.0,  0.0,  0.0,
+  -1.0,  0.0,  0.0,
+];
+const textureCoordinates = [
+  // Front
+  0.0,  0.0,
+  1.0,  0.0,
+  1.0,  1.0,
+  0.0,  1.0,
+  // Back
+  0.0,  0.0,
+  1.0,  0.0,
+  1.0,  1.0,
+  0.0,  1.0,
+  // Top
+  0.0,  0.0,
+  1.0,  0.0,
+  1.0,  1.0,
+  0.0,  1.0,
+  // Bottom
+  0.0,  0.0,
+  1.0,  0.0,
+  1.0,  1.0,
+  0.0,  1.0,
+  // Right
+  0.0,  0.0,
+  1.0,  0.0,
+  1.0,  1.0,
+  0.0,  1.0,
+  // Left
+  0.0,  0.0,
+  1.0,  0.0,
+  1.0,  1.0,
+  0.0,  1.0,
+];
+const indices = [
+  0,  1,  2,      0,  2,  3,    // front
+  4,  5,  6,      4,  6,  7,    // back
+  8,  9,  10,     8,  10, 11,   // top
+  12, 13, 14,     12, 14, 15,   // bottom
+  16, 17, 18,     16, 18, 19,   // right
+  20, 21, 22,     20, 22, 23,   // left
+];
+/*********************/
 
-  // Set up the normals for the vertices, so that we can compute lighting.
+class AttributeConfig {
+  constructor(_location, _numComponents, _type, _normalize, _stride, _offset) {
+    this.location = _location;
+    this.numComponents = _numComponents;
+    this.type = _type;
+    this.normalize = _normalize;
+    this.stride = _stride;
+    this.offset = _offset;
+  }
+}
 
-  const normalBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+function initVAO(gl, attribLocations) {
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
 
-  const vertexNormals = [
-    // Front
-     0.0,  0.0,  1.0,
-     0.0,  0.0,  1.0,
-     0.0,  0.0,  1.0,
-     0.0,  0.0,  1.0,
+  // positions
+  const positionAttribConfig = new AttributeConfig(attribLocations.vertexPosition, 3, gl.FLOAT, false, 0, 0);
+  _setup(gl, gl.ARRAY_BUFFER, gl.STATIC_DRAW, new Float32Array(vertexPositions), positionAttribConfig);
 
-    // Back
-     0.0,  0.0, -1.0,
-     0.0,  0.0, -1.0,
-     0.0,  0.0, -1.0,
-     0.0,  0.0, -1.0,
+  // normals
+  const normalAttribConfig = new AttributeConfig(attribLocations.vertexNormal, 3, gl.FLOAT, false, 0, 0);
+  _setup(gl, gl.ARRAY_BUFFER, gl.STATIC_DRAW, new Float32Array(vertexNormals), normalAttribConfig);
 
-    // Top
-     0.0,  1.0,  0.0,
-     0.0,  1.0,  0.0,
-     0.0,  1.0,  0.0,
-     0.0,  1.0,  0.0,
+  // texture cooridnates
+  const texAttribConfig = new AttributeConfig(attribLocations.textureCoord, 2, gl.FLOAT, false, 0, 0);
+  _setup(gl, gl.ARRAY_BUFFER, gl.STATIC_DRAW, new Float32Array(textureCoordinates), texAttribConfig);
 
-    // Bottom
-     0.0, -1.0,  0.0,
-     0.0, -1.0,  0.0,
-     0.0, -1.0,  0.0,
-     0.0, -1.0,  0.0,
+  // indices
+  const indexBuffer = _setup(gl, gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW, new Uint16Array(indices), null, false);
 
-    // Right
-     1.0,  0.0,  0.0,
-     1.0,  0.0,  0.0,
-     1.0,  0.0,  0.0,
-     1.0,  0.0,  0.0,
-
-    // Left
-    -1.0,  0.0,  0.0,
-    -1.0,  0.0,  0.0,
-    -1.0,  0.0,  0.0,
-    -1.0,  0.0,  0.0,
-  ];
-
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals),
-                gl.STATIC_DRAW);
-
-  // Now set up the texture coordinates for the faces.
-
-  const textureCoordBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
-
-  const textureCoordinates = [
-    // Front
-    0.0,  0.0,
-    1.0,  0.0,
-    1.0,  1.0,
-    0.0,  1.0,
-    // Back
-    0.0,  0.0,
-    1.0,  0.0,
-    1.0,  1.0,
-    0.0,  1.0,
-    // Top
-    0.0,  0.0,
-    1.0,  0.0,
-    1.0,  1.0,
-    0.0,  1.0,
-    // Bottom
-    0.0,  0.0,
-    1.0,  0.0,
-    1.0,  1.0,
-    0.0,  1.0,
-    // Right
-    0.0,  0.0,
-    1.0,  0.0,
-    1.0,  1.0,
-    0.0,  1.0,
-    // Left
-    0.0,  0.0,
-    1.0,  0.0,
-    1.0,  1.0,
-    0.0,  1.0,
-  ];
-
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoordinates),
-                gl.STATIC_DRAW);
-
-  // Build the element array buffer; this specifies the indices
-  // into the vertex arrays for each face's vertices.
-
-  const indexBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-
-  // This array defines each face as two triangles, using the
-  // indices into the vertex array to specify each triangle's
-  // position.
-
-  const indices = [
-    0,  1,  2,      0,  2,  3,    // front
-    4,  5,  6,      4,  6,  7,    // back
-    8,  9,  10,     8,  10, 11,   // top
-    12, 13, 14,     12, 14, 15,   // bottom
-    16, 17, 18,     16, 18, 19,   // right
-    20, 21, 22,     20, 22, 23,   // left
-  ];
-
-  // Now send the element array to GL
-
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,
-      new Uint16Array(indices), gl.STATIC_DRAW);
+  // Unbind VAO
+  gl.bindVertexArray(null);
 
   return {
-    position: positionBuffer,
-    normal: normalBuffer,
-    textureCoord: textureCoordBuffer,
-    indices: indexBuffer,
+    vao: vao,
+    indexCount : indices.length,
+    indexType : gl.UNSIGNED_SHORT,
+    indexOffset : 0,
   };
 }
 
-class AttributeConfig {
-  constructor() {
-    this.numComponents = 0;
-    this.type = gl.FLOAT;
-    this.normalize = false;
-    this.stride = 0;
-    this.offset = 0;
-    this.location = gl.INVALID_ENUM;
-  }
-}
-// createVAO
-function createVAO(gl, buffer_type, draw_type, attrib_config, typed_data) {
-  var vao = gl.createVertexArray();
-  gl.bindVertexArray(vao);
+function _setup(gl, buffer_type, draw_type, typed_data, attrib_config, should_unbind = true) {
 
   // Create and bind buffer
   const buffer = gl.createBuffer();
   gl.bindBuffer(buffer_type, buffer);
 
-  // Set up attribute
-  gl.vertexAttribPointer(
-      attrib_config.location,
-      attrib_config.numComponents,
-      attrib_config.type,
-      attrib_config.normalize,
-      attrib_config.stride,
-      attrib_config.offset);
-  gl.enableVertexAttribArray(attrib_config.location);
-
   // Fill buffer with data
   gl.bufferData(buffer_type, typed_data, draw_type);
 
-  // Unbind buffer and VAO
-  gl.bindBuffer(buffer_type, null);
-  gl.bindVertexArray(null);
+  // Set up attribute
+  if(attrib_config instanceof AttributeConfig) {
+    gl.vertexAttribPointer(
+        attrib_config.location,
+        attrib_config.numComponents,
+        attrib_config.type,
+        attrib_config.normalize,
+        attrib_config.stride,
+        attrib_config.offset);
+    gl.enableVertexAttribArray(attrib_config.location);
+  }
 
-  return vao;
+  // Unbind buffer (unless told not too, e.g., for element buffer)
+  if(should_unbind)
+    gl.bindBuffer(buffer_type, null);
 }
