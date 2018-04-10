@@ -1,122 +1,39 @@
-/***** Cube Data *****/
-const vertexPositions = [
-  // Front face
-  -1.0, -1.0,  1.0,
-   1.0, -1.0,  1.0,
-   1.0,  1.0,  1.0,
-  -1.0,  1.0,  1.0,
+class BufferConfig {
+  constructor(gl, _bufferType, _typedData, _drawType) {
+    if(!(_typedData.buffer instanceof ArrayBuffer)) {
+      console.log("_typedData input to BufferConfig ctor is not an instance of TypedArray.");
+      return;
+    }
 
-  // Back face
-  -1.0, -1.0, -1.0,
-  -1.0,  1.0, -1.0,
-   1.0,  1.0, -1.0,
-   1.0, -1.0, -1.0,
+    // if(_typedData == null) {
+    //   console.log("_typedData input to BufferConfig ctor cannot be null.");
+    //   return;
+    // }
 
-  // Top face
-  -1.0,  1.0, -1.0,
-  -1.0,  1.0,  1.0,
-   1.0,  1.0,  1.0,
-   1.0,  1.0, -1.0,
+    this.bufferType = _bufferType;
+    this.typedData = _typedData;
+    this.drawType = _drawType;
 
-  // Bottom face
-  -1.0, -1.0, -1.0,
-   1.0, -1.0, -1.0,
-   1.0, -1.0,  1.0,
-  -1.0, -1.0,  1.0,
+    // Create and bind buffer
+    this.buffer = gl.createBuffer();
+    gl.bindBuffer(this.bufferType, this.buffer);
 
-  // Right face
-   1.0, -1.0, -1.0,
-   1.0,  1.0, -1.0,
-   1.0,  1.0,  1.0,
-   1.0, -1.0,  1.0,
+    // Fill buffer with data
+    gl.bufferData(this.bufferType, this.typedData, this.drawType);
 
-  // Left face
-  -1.0, -1.0, -1.0,
-  -1.0, -1.0,  1.0,
-  -1.0,  1.0,  1.0,
-  -1.0,  1.0, -1.0,
-];
-const vertexNormals = [
-  // Front
-   0.0,  0.0,  1.0,
-   0.0,  0.0,  1.0,
-   0.0,  0.0,  1.0,
-   0.0,  0.0,  1.0,
-
-  // Back
-   0.0,  0.0, -1.0,
-   0.0,  0.0, -1.0,
-   0.0,  0.0, -1.0,
-   0.0,  0.0, -1.0,
-
-  // Top
-   0.0,  1.0,  0.0,
-   0.0,  1.0,  0.0,
-   0.0,  1.0,  0.0,
-   0.0,  1.0,  0.0,
-
-  // Bottom
-   0.0, -1.0,  0.0,
-   0.0, -1.0,  0.0,
-   0.0, -1.0,  0.0,
-   0.0, -1.0,  0.0,
-
-  // Right
-   1.0,  0.0,  0.0,
-   1.0,  0.0,  0.0,
-   1.0,  0.0,  0.0,
-   1.0,  0.0,  0.0,
-
-  // Left
-  -1.0,  0.0,  0.0,
-  -1.0,  0.0,  0.0,
-  -1.0,  0.0,  0.0,
-  -1.0,  0.0,  0.0,
-];
-const textureCoordinates = [
-  // Front
-  0.0,  0.0,
-  1.0,  0.0,
-  1.0,  1.0,
-  0.0,  1.0,
-  // Back
-  0.0,  0.0,
-  1.0,  0.0,
-  1.0,  1.0,
-  0.0,  1.0,
-  // Top
-  0.0,  0.0,
-  1.0,  0.0,
-  1.0,  1.0,
-  0.0,  1.0,
-  // Bottom
-  0.0,  0.0,
-  1.0,  0.0,
-  1.0,  1.0,
-  0.0,  1.0,
-  // Right
-  0.0,  0.0,
-  1.0,  0.0,
-  1.0,  1.0,
-  0.0,  1.0,
-  // Left
-  0.0,  0.0,
-  1.0,  0.0,
-  1.0,  1.0,
-  0.0,  1.0,
-];
-const indices = [
-  0,  1,  2,      0,  2,  3,    // front
-  4,  5,  6,      4,  6,  7,    // back
-  8,  9,  10,     8,  10, 11,   // top
-  12, 13, 14,     12, 14, 15,   // bottom
-  16, 17, 18,     16, 18, 19,   // right
-  20, 21, 22,     20, 22, 23,   // left
-];
-/*********************/
+    // Unbind buffer
+    gl.bindBuffer(this.bufferType, null);
+  }
+}
 
 class AttributeConfig {
-  constructor(_location, _numComponents, _type, _normalize, _stride, _offset) {
+  constructor(_bufferConfig, _location, _numComponents, _type, _normalize, _stride, _offset) {
+    if(!(_bufferConfig instanceof BufferConfig)) {
+      console.log("_bufferConfig input to AttributeConfig ctor is not an instance of BufferConfig.");
+      return;
+    }
+
+    this.bufferConfig = _bufferConfig;
     this.location = _location;
     this.numComponents = _numComponents;
     this.type = _type;
@@ -126,58 +43,65 @@ class AttributeConfig {
   }
 }
 
-function initVAO(gl, attribLocations) {
+function initVAO(gl, attribConfigArray, indexBufferConfig = null) {
+  if(!(attribConfigArray instanceof Array)) {
+    console.log("attribConfigArray input to initVAO is not an instance of an Array.");
+    return null;
+  }
+
+  output = {
+    vao: null,
+    useIndices: false,
+  };
+
+  // Create and bind VAO
   const vao = gl.createVertexArray();
+  output.vao = vao;
   gl.bindVertexArray(vao);
 
-  // positions
-  const positionAttribConfig = new AttributeConfig(attribLocations.vertexPosition, 3, gl.FLOAT, false, 0, 0);
-  _setup(gl, gl.ARRAY_BUFFER, gl.STATIC_DRAW, new Float32Array(vertexPositions), positionAttribConfig);
+  for(let i = 0; i < attribConfigArray.length; i++) {
+    const attribConfig = attribConfigArray[i];
+    if(!(attribConfig instanceof AttributeConfig)) {
+      console.log("Non-AttributeConfig type in attribConfigArray.");
+      return null;
+    }
 
-  // normals
-  const normalAttribConfig = new AttributeConfig(attribLocations.vertexNormal, 3, gl.FLOAT, false, 0, 0);
-  _setup(gl, gl.ARRAY_BUFFER, gl.STATIC_DRAW, new Float32Array(vertexNormals), normalAttribConfig);
+    // Bind buffer
+    gl.bindBuffer(attribConfig.bufferConfig.bufferType,
+                  attribConfig.bufferConfig.buffer);
 
-  // texture cooridnates
-  const texAttribConfig = new AttributeConfig(attribLocations.textureCoord, 2, gl.FLOAT, false, 0, 0);
-  _setup(gl, gl.ARRAY_BUFFER, gl.STATIC_DRAW, new Float32Array(textureCoordinates), texAttribConfig);
+    // Set and enable attribute
+    gl.vertexAttribPointer(
+        attribConfig.location,
+        attribConfig.numComponents,
+        attribConfig.type,
+        attribConfig.normalize,
+        attribConfig.stride,
+        attribConfig.offset);
+    gl.enableVertexAttribArray(attribConfig.location);
 
-  // indices
-  const indexBuffer = _setup(gl, gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW, new Uint16Array(indices), null, false);
+    // Unbind buffer
+    gl.bindBuffer(attribConfig.bufferConfig.bufferType, null);
+  }
+
+  if(indexBufferConfig != null) {
+    if(!(indexBufferConfig instanceof BufferConfig)) {
+      console.log("indexBufferConfig not an instance of BufferConfig.");
+      return null;
+    }
+
+    // Bind index buffer (must keep bound for VAO!)
+    gl.bindBuffer(indexBufferConfig.bufferType, indexBufferConfig.buffer);
+
+    output.useIndices = true;
+    output.indexCount = indexBufferConfig.typedData.length;
+    // TODO: change hardcoding?
+    output.indexType = gl.UNSIGNED_SHORT;
+    output.indexOffset = 0;
+  }
 
   // Unbind VAO
   gl.bindVertexArray(null);
 
-  return {
-    vao: vao,
-    indexCount : indices.length,
-    indexType : gl.UNSIGNED_SHORT,
-    indexOffset : 0,
-  };
-}
-
-function _setup(gl, buffer_type, draw_type, typed_data, attrib_config, should_unbind = true) {
-
-  // Create and bind buffer
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(buffer_type, buffer);
-
-  // Fill buffer with data
-  gl.bufferData(buffer_type, typed_data, draw_type);
-
-  // Set up attribute
-  if(attrib_config instanceof AttributeConfig) {
-    gl.vertexAttribPointer(
-        attrib_config.location,
-        attrib_config.numComponents,
-        attrib_config.type,
-        attrib_config.normalize,
-        attrib_config.stride,
-        attrib_config.offset);
-    gl.enableVertexAttribArray(attrib_config.location);
-  }
-
-  // Unbind buffer (unless told not too, e.g., for element buffer)
-  if(should_unbind)
-    gl.bindBuffer(buffer_type, null);
+  return output;
 }

@@ -41,7 +41,20 @@ function main() {
     },
   };
 
-  const vaoInfo = initVAO(gl, programInfo.attribLocations);
+  const attribConfigArray = [
+    // positions
+    new AttributeConfig(new BufferConfig(gl, gl.ARRAY_BUFFER, new Float32Array(vertexPositions), gl.STATIC_DRAW),
+                        programInfo.attribLocations.vertexPosition, 3, gl.FLOAT, false, 0, 0),
+    // normals
+    new AttributeConfig(new BufferConfig(gl, gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW),
+                        programInfo.attribLocations.vertexNormal, 3, gl.FLOAT, false, 0, 0),
+    // texture coordinates
+    new AttributeConfig(new BufferConfig(gl, gl.ARRAY_BUFFER, new Float32Array(textureCoordinates), gl.STATIC_DRAW),
+                        programInfo.attribLocations.textureCoord, 2, gl.FLOAT, false, 0, 0)
+  ];
+  const indexBufferConfig = new BufferConfig(gl, gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+
+  const vaoInfo = initVAO(gl, attribConfigArray, indexBufferConfig);
 
   const texture = initTexture(gl);
 
