@@ -43,65 +43,70 @@ class AttributeConfig {
   }
 }
 
-function initVAO(gl, attribConfigArray, indexBufferConfig = null) {
-  if(!(attribConfigArray instanceof Array)) {
-    console.log("attribConfigArray input to initVAO is not an instance of an Array.");
-    return null;
-  }
-
-  output = {
-    vao: null,
-    useIndices: false,
-  };
-
-  // Create and bind VAO
-  const vao = gl.createVertexArray();
-  output.vao = vao;
-  gl.bindVertexArray(vao);
-
-  for(let i = 0; i < attribConfigArray.length; i++) {
-    const attribConfig = attribConfigArray[i];
-    if(!(attribConfig instanceof AttributeConfig)) {
-      console.log("Non-AttributeConfig type in attribConfigArray.");
-      return null;
+class IndexConfig {
+  constructor(_bufferConfig, _type, _offset) {
+    if(!(_bufferConfig instanceof BufferConfig)) {
+      console.log("_bufferConfig input to IndexConfig ctor is not an instance of BufferConfig.");
+      return;
     }
 
-    // Bind buffer
-    gl.bindBuffer(attribConfig.bufferConfig.bufferType,
-                  attribConfig.bufferConfig.buffer);
-
-    // Set and enable attribute
-    gl.vertexAttribPointer(
-        attribConfig.location,
-        attribConfig.numComponents,
-        attribConfig.type,
-        attribConfig.normalize,
-        attribConfig.stride,
-        attribConfig.offset);
-    gl.enableVertexAttribArray(attribConfig.location);
-
-    // Unbind buffer
-    gl.bindBuffer(attribConfig.bufferConfig.bufferType, null);
+    this.bufferConfig = _bufferConfig;
+    this.type = _type;
+    this.offset = _offset;
   }
+}
 
-  if(indexBufferConfig != null) {
-    if(!(indexBufferConfig instanceof BufferConfig)) {
-      console.log("indexBufferConfig not an instance of BufferConfig.");
-      return null;
+class VAO {
+  constructor(gl, attribConfigArray, indexConfig = null) {
+    if(!(attribConfigArray instanceof Array)) {
+      console.log("attribConfigArray input to initVAO is not an instance of an Array.");
     }
 
-    // Bind index buffer (must keep bound for VAO!)
-    gl.bindBuffer(indexBufferConfig.bufferType, indexBufferConfig.buffer);
+    // Create and bind VAO
+    this.vao = gl.createVertexArray();
+    gl.bindVertexArray(this.vao);
 
-    output.useIndices = true;
-    output.indexCount = indexBufferConfig.typedData.length;
-    // TODO: change hardcoding?
-    output.indexType = gl.UNSIGNED_SHORT;
-    output.indexOffset = 0;
+    for(let i = 0; i < attribConfigArray.length; i++) {
+      const attribConfig = attribConfigArray[i];
+      if(!(attribConfig instanceof AttributeConfig)) {
+        console.log("Non-AttributeConfig type in attribConfigArray.");
+      }
+
+      // Bind buffer
+      gl.bindBuffer(attribConfig.bufferConfig.bufferType,
+                    attribConfig.bufferConfig.buffer);
+
+      // Set and enable attribute
+      gl.vertexAttribPointer(
+          attribConfig.location,
+          attribConfig.numComponents,
+          attribConfig.type,
+          attribConfig.normalize,
+          attribConfig.stride,
+          attribConfig.offset);
+      gl.enableVertexAttribArray(attribConfig.location);
+
+      // Unbind buffer
+      gl.bindBuffer(attribConfig.bufferConfig.bufferType, null);
+    }
+
+    this.useIndicies = false;
+    if(indexConfig != null) {
+      if(!(indexConfig instanceof IndexConfig)) {
+        console.log("indexConfig not an instance of IndexConfig.");
+      }
+
+      // Bind index buffer (must keep bound for VAO!)
+      gl.bindBuffer(indexConfig.bufferConfig.bufferType,
+                    indexConfig.bufferConfig.buffer);
+
+      this.useIndices = true;
+      this.count = indexConfig.bufferConfig.typedData.length;
+      this.type = indexConfig.type;
+      this.offset = indexConfig.offset;
+    }
+
+    // Unbind VAO
+    gl.bindVertexArray(null);
   }
-
-  // Unbind VAO
-  gl.bindVertexArray(null);
-
-  return output;
 }

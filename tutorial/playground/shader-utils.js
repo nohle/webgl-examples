@@ -45,23 +45,34 @@ const fsSource = `#version 300 es
 `;
 
 // Initialize a shader program, so WebGL knows how to draw our data
-function initShaderProgram(gl, vsSource, fsSource) {
-  const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
-  const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
+class ShaderProgram {
+  constructor(gl, vsSource, fsSource) {
+    this.gl = gl;
 
-  // Create the shader program
-  const shaderProgram = gl.createProgram();
-  gl.attachShader(shaderProgram, vertexShader);
-  gl.attachShader(shaderProgram, fragmentShader);
-  gl.linkProgram(shaderProgram);
+    const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
+    const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
 
-  // If creating the shader program failed, alert
-  if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-    alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
-    return null;
+    // Create the shader program
+    this.program = gl.createProgram();
+    gl.attachShader(this.program, vertexShader);
+    gl.attachShader(this.program, fragmentShader);
+    gl.linkProgram(this.program);
+
+    // If creating the shader program failed, alert
+    if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
+      alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(this.program));
+    }
+
+    this.attribLocations = {};
+    this.uniformLocations = {};
   }
 
-  return shaderProgram;
+  storeAttribLocation(key, name) {
+    this.attribLocations[key] = this.gl.getAttribLocation(this.program, name);
+  }
+  storeUniformLocation(key, name) {
+    this.uniformLocations[key] = this.gl.getUniformLocation(this.program, name);
+  }
 }
 
 // Creates a shader of the given type, uploads the source and compiles it.

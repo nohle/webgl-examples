@@ -20,41 +20,38 @@ function main() {
 
   // Initialize a shader program; this is where all the lighting
   // for the vertices and so forth is established.
-  const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
+  let shaderProgram = new ShaderProgram(gl, vsSource, fsSource);
 
   // Collect all the info needed to use the shader program.
   // Look up which attributes our shader program is using
   // for aVertexPosition, aVertexNormal, aTextureCoord,
   // and look up uniform locations.
-  const programInfo = {
-    program: shaderProgram,
-    attribLocations: {
-      vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
-      vertexNormal: gl.getAttribLocation(shaderProgram, 'aVertexNormal'),
-      textureCoord: gl.getAttribLocation(shaderProgram, 'aTextureCoord'),
-    },
-    uniformLocations: {
-      projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-      modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
-      normalMatrix: gl.getUniformLocation(shaderProgram, 'uNormalMatrix'),
-      sampler: gl.getUniformLocation(shaderProgram, 'uSampler'),
-    },
-  };
+  shaderProgram.storeAttribLocation('vertexPosition', 'aVertexPosition');
+  shaderProgram.storeAttribLocation('vertexNormal', 'aVertexNormal');
+  shaderProgram.storeAttribLocation('textureCoord', 'aTextureCoord');
+  shaderProgram.storeUniformLocation('projectionMatrix', 'uProjectionMatrix');
+  shaderProgram.storeUniformLocation('modelViewMatrix', 'uModelViewMatrix');
+  shaderProgram.storeUniformLocation('normalMatrix', 'uNormalMatrix');
+  shaderProgram.storeUniformLocation('sampler', 'uSampler');
+
+  console.log(shaderProgram);
 
   const attribConfigArray = [
     // positions
     new AttributeConfig(new BufferConfig(gl, gl.ARRAY_BUFFER, new Float32Array(vertexPositions), gl.STATIC_DRAW),
-                        programInfo.attribLocations.vertexPosition, 3, gl.FLOAT, false, 0, 0),
+                        shaderProgram.attribLocations.vertexPosition, 3, gl.FLOAT, false, 0, 0),
     // normals
     new AttributeConfig(new BufferConfig(gl, gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW),
-                        programInfo.attribLocations.vertexNormal, 3, gl.FLOAT, false, 0, 0),
+                        shaderProgram.attribLocations.vertexNormal, 3, gl.FLOAT, false, 0, 0),
     // texture coordinates
     new AttributeConfig(new BufferConfig(gl, gl.ARRAY_BUFFER, new Float32Array(textureCoordinates), gl.STATIC_DRAW),
-                        programInfo.attribLocations.textureCoord, 2, gl.FLOAT, false, 0, 0)
+                        shaderProgram.attribLocations.textureCoord, 2, gl.FLOAT, false, 0, 0)
   ];
-  const indexBufferConfig = new BufferConfig(gl, gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+  const indexConfig =
+      new IndexConfig(new BufferConfig(gl, gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW),
+                      gl.UNSIGNED_SHORT, 0);
 
-  const vaoInfo = initVAO(gl, attribConfigArray, indexBufferConfig);
+  const vao = new VAO(gl, attribConfigArray, indexConfig);
 
   const texture = initTexture(gl);
 
@@ -72,7 +69,7 @@ function main() {
       updateTexture(gl, texture, video);
     }
 
-    drawScene(gl, programInfo, vaoInfo, texture, deltaTime);
+    drawScene(gl, shaderProgram, vao, texture, deltaTime);
 
     requestAnimationFrame(render);
   }
@@ -115,61 +112,9 @@ function setupVideo(url) {
 }
 
 //
-// Initialize a texture.
-//
-function initTexture(gl, url) {
-  const texture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-
-  // Because video havs to be download over the internet
-  // they might take a moment until it's ready so
-  // put a single pixel in the texture so we can
-  // use it immediately.
-  const level = 0;
-  const internalFormat = gl.RGBA;
-  const width = 1;
-  const height = 1;
-  const border = 0;
-  const srcFormat = gl.RGBA;
-  const srcType = gl.UNSIGNED_BYTE;
-  const pixel = new Uint8Array([0, 0, 255, 255]);  // opaque blue
-  gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-                width, height, border, srcFormat, srcType,
-                pixel);
-
-  // Turn off mips and set  wrapping to clamp to edge so it
-  // will work regardless of the dimensions of the video.
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-
-  gl.bindTexture(gl.TEXTURE_2D, null);
-
-  return texture;
-}
-
-//
-// copy the video texture
-//
-function updateTexture(gl, texture, video) {
-  const level = 0;
-  const internalFormat = gl.RGBA;
-  const srcFormat = gl.RGBA;
-  const srcType = gl.UNSIGNED_BYTE;
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-                srcFormat, srcType, video);
-  gl.bindTexture(gl.TEXTURE_2D, null);
-}
-
-function isPowerOf2(value) {
-  return (value & (value - 1)) == 0;
-}
-
-//
 // Draw the scene.
 //
-function drawScene(gl, programInfo, vaoInfo, texture, deltaTime) {
+function drawScene(gl, shaderProgram, vao, texture, deltaTime) {
   gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
   gl.clearDepth(1.0);                 // Clear everything
   gl.enable(gl.DEPTH_TEST);           // Enable depth testing
@@ -224,19 +169,19 @@ function drawScene(gl, programInfo, vaoInfo, texture, deltaTime) {
   mat4.transpose(normalMatrix, normalMatrix);
 
   // Tell WebGL to use our program when drawing
-  gl.useProgram(programInfo.program);
+  gl.useProgram(shaderProgram.program);
 
   // Set the shader uniforms
   gl.uniformMatrix4fv(
-      programInfo.uniformLocations.projectionMatrix,
+      shaderProgram.uniformLocations.projectionMatrix,
       false,
       projectionMatrix);
   gl.uniformMatrix4fv(
-      programInfo.uniformLocations.modelViewMatrix,
+      shaderProgram.uniformLocations.modelViewMatrix,
       false,
       modelViewMatrix);
   gl.uniformMatrix4fv(
-      programInfo.uniformLocations.normalMatrix,
+      shaderProgram.uniformLocations.normalMatrix,
       false,
       normalMatrix);
 
@@ -247,13 +192,13 @@ function drawScene(gl, programInfo, vaoInfo, texture, deltaTime) {
   // Bind the texture to texture unit 0
   gl.bindTexture(gl.TEXTURE_2D, texture);
   // Tell the shader we bound the texture to texture unit 0
-  gl.uniform1i(programInfo.uniformLocations.sampler, 0);
+  gl.uniform1i(shaderProgram.uniformLocations.sampler, 0);
   // Unbind the texture
   // gl.bindTexture(gl.TEXTURE_2D, null);
 
   {
-    gl.bindVertexArray(vaoInfo.vao);
-    gl.drawElements(gl.TRIANGLES, vaoInfo.indexCount, vaoInfo.indexType, vaoInfo.indexOffset);
+    gl.bindVertexArray(vao.vao);
+    gl.drawElements(gl.TRIANGLES, vao.count, vao.type, vao.offset);
     gl.bindVertexArray(null);
   }
 
